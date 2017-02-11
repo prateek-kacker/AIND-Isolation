@@ -7,11 +7,15 @@ You must test your agent's strength against a set of agents with known
 relative strength using tournament.py and include the results in your report.
 """
 import random
+from sample_players import null_score
+from sample_players import open_move_score
+from sample_players import improved_score
+
 
 
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
-    pass
+    print("Timeout raised")
 
 
 def custom_score(game, player):
@@ -34,8 +38,14 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
 
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves(player)))
+
 
 
 class CustomPlayer:
@@ -121,19 +131,23 @@ class CustomPlayer:
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
 
+        a=1
+        b=1
         try:
+            if self.method == 'minimax':
+#                number,tuple_ans=self.minimax(game,self.search_depth,game.active_player)
+                (moves,(a,b))=(self.minimax(game,self.search_depth,True))
+            else:
+               (moves,(a,b))=(self.alphabeta(game,self.search_depth,float('-inf'),float('inf'),True))
             # The search method call (alpha beta or minimax) should happen in
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            pass
-
         except Timeout:
+                print("Prateek")
             # Handle any actions required at timeout, if necessary
-            pass
-
         # Return the best move from the last completed search iteration
-        raise NotImplementedError
+        return (a,b)
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
@@ -160,11 +174,78 @@ class CustomPlayer:
         tuple(int, int)
             The best move for the current branch; (-1, -1) for no legal moves
         """
+        
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+ #       if game.is_loser(maximizing_player):
+ #           return float("-inf")
+
+ #      if game.is_winner(maximizing_player):
+ #          return float("inf")
+        
+        legal_moves= game.get_legal_moves()
+
+        if depth >1 and maximizing_player == True:
+            max_score=float("-inf")
+            best_move=(-1,-1)
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                score,suggested_move=self.minimax(new_game,depth-1,False)
+                if score>max_score:
+                    max_score=score
+                    best_move=suggested_move
+            return max_score,best_move
+        if depth > 1 and maximizing_player == False:
+            min_score = float("inf")
+            best_move=(-1,-1)
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                score,suggested_move=self.minimax(new_game,depth-1,True)
+                if score<min_score:
+                    min_score=score
+                    best_move = suggested_move
+            return min_score,best_move
+        if depth == 1 and maximizing_player == True:
+            max_score=float("-inf")
+            best_move=(-1,-1)
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                if self.score == custom_score:
+                    score=Timeout.custom_score(new_game,game.active_player)
+                elif self.score == null_score:
+                    score=null_score(new_game,game.active_player)
+                elif self.score == open_move_score:
+                    score=open_move_score(new_game,game.active_player)
+                elif self.score == improved_score:
+                    score=improved_score(new_game,game.active_player)
+                if score>max_score:
+                    max_score=score
+                    best_move=each_move
+            return max_score,best_move
+        if depth == 1 and maximizing_player == False:
+            min_score=float("inf")
+            best_move=(-1,-1)
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                if self.score == custom_score:
+                    score=Timeout.custom_score(new_game,game.active_player)
+                elif self.score == null_score:
+                    score=null_score(new_game,game.active_player)
+                elif self.score == open_move_score:
+                    score=open_move_score(new_game,game.active_player)
+                elif self.score == improved_score:
+                    score=improved_score(new_game,game.active_player)
+                if score>min_score:
+                    min_score=score
+                    best_move=each_move
+            return min_score,best_move
+                                    
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -202,4 +283,44 @@ class CustomPlayer:
             raise Timeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+        if game.is_loser(maximizing_player):
+            return float("-inf"),(-1,-1)
+
+        if game.is_winner(maximizing_player):
+            return float("inf"),(-1,-1)
+    
+        new_game=game.copy()
+        if depth == 0:
+            if self.score == custom_score:
+                score=Timeout.custom_score(new_game,game.active_player)
+            elif self.score == null_score:
+                score=null_score(new_game,game.active_player)
+            elif self.score == open_move_score:
+                score=open_move_score(new_game,game.active_player)
+            elif self.score == improved_score:
+                score=improved_score(new_game,game.active_player)
+            return score,(-1,-1)
+        if maximizing_player:
+            int_alpha = float('-inf')
+            legal_moves= game.get_legal_moves()
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                print(depth,alpha,beta)
+                int_alpha,_ = max(int_alpha,self.alphabeta(new_game,depth-1,alpha,beta,False)[0])
+                alpha = max(alpha,int_alpha)
+                if beta <= alpha:
+                    break
+            return int_alpha,each_move
+        else:
+            int_beta = float('inf')
+            legal_moves= game.get_legal_moves()
+            for i,each_move in enumerate(legal_moves):
+                new_game=game.copy()
+                new_game.apply_move(each_move)
+                print(depth,alpha,beta)
+                int_beta,_ = min(int_beta,self.alphabeta(new_game,depth-1,alpha,beta,True)[0])
+                beta=min(int_beta,beta)
+                if beta <= alpha:
+                    break
+            return int_beta,each_move
